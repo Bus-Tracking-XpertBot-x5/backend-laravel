@@ -13,3 +13,7 @@ Route::get('/test', function () {
 Route::get('/login', function () {
     return response()->json(['message' => 'Login here!']);
 });
+
+Route::register('/register', function () {
+    return response()->json(['message' => 'Register here!']);
+});
