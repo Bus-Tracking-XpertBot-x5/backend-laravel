@@ -17,7 +17,3 @@ Route::get('/login', function () {
 Route::get('/register', function () {
     return response()->json(['message' => 'Register here!']);
 });
-
-Route::get('/helo', function () {
-    return 'Hello World!';
-});
