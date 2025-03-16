@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('type',['educational institution','company','government institution']);
             $table->text('description')->nullable();
             $table->json('location');
-            $table->foreignId('admin_id')->constrained('users');
+            $table->foreignId('manager_id')->constrained('users');
             $table->timestamps();
         });
     }

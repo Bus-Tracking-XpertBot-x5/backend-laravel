@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('passenger_boardings', function (Blueprint $table) {
-            $table->foreignId('bus_location_id')->constrained('bus_locations');
+        Schema::table('bus_locations', function (Blueprint $table) {
+            $table->foreignId('bus_id')->constrained('buses');
         });
     }
 
@@ -21,9 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('passenger_boardings', function (Blueprint $table) {
-            $table->dropForeign(['bus_location_id']);
-            $table->dropcolumn('bus_location_id');
+        Schema::table('bus_locations', function (Blueprint $table) {
+            $table->dropForeign(['bus_id']);
+            $table->dropForeign('bus_id');
         });
     }
 };

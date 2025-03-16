@@ -19,6 +19,7 @@ return new class extends Migration
             $table->json('current_location');
             $table->foreignId('route_id')->constrained('routes');
             $table->timestamps();
+
         });
     }
 
