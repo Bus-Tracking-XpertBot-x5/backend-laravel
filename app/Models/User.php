@@ -20,7 +20,10 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'password',
+        'phone',
+        'role',
+        'image',
+
     ];
 
     /**
@@ -45,4 +48,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function passenger(){
+        return $this->hasOne(Passenger::class);
+    }
+    public function organization(){
+        return $this->hasOne(Organization::class);
+    }
+    public function driver(){
+        return $this->hasOne(Driver::class);
+    }
+    
+
 }
