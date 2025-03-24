@@ -20,7 +20,12 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
+        'role',
+        'latitude',
+        'longitude',
+        'organization_id'
     ];
 
     /**
@@ -44,5 +49,19 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function driver()
+    {
+        return $this->hasOne(Driver::class);
+    }
+
+    public function passengerBoardings()
+    {
+        return $this->hasMany(PassengerBoarding::class);
     }
 }
