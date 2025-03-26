@@ -16,10 +16,12 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('phone_number')->unique();
+            $table->string('phone_number',20)->unique();
             $table->timestamp('phone_number_verified_at')->nullable();
             $table->string('password');
             $table->enum('role', ["admin", "manager", "driver", "passenger"]);
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
             $table->rememberToken();
             $table->timestamps();
         });

@@ -24,7 +24,10 @@ class User extends Authenticatable
         'phone_number',
         'password',
         'role',
-        'email_verification_code'
+        'email_verification_code',
+        'latitude',
+        'longitude',
+        'organization_id'
     ];
 
     /**
@@ -49,5 +52,19 @@ class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function driver()
+    {
+        return $this->hasOne(Driver::class);
+    }
+
+    public function passengerBoardings()
+    {
+        return $this->hasMany(PassengerBoarding::class);
     }
 }
