@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class BusOrganization extends Pivot
+class DriverOrganization extends Pivot
 {
-    protected $table = 'bus_organization';
+    protected $table = 'driver_organization';
 
     public $incrementing = true;
-
-    public function bus()
+    public function driver()
     {
-        return $this->belongsTo(Bus::class);
+        return $this->belongsTo(Driver::class);
     }
     public function organization()
     {
