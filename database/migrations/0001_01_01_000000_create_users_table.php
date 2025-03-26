@@ -15,17 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('phone', 20)->unique()->nullable();
-            $table->string('password');
-            $table->enum('role', ['admin', 'manager', 'driver', 'passenger']);
             $table->timestamp('email_verified_at')->nullable();
-            $table->timestamp('phone_verified_at')->nullable();
-            // Based on the dump these are integers, though decimals might be more accurate for geo data.
+            $table->string('phone_number',20)->unique();
+            $table->timestamp('phone_number_verified_at')->nullable();
+            $table->string('password');
+            $table->enum('role', ["admin", "manager", "driver", "passenger"]);
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->rememberToken();
             $table->timestamps();
-            
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
