@@ -56,4 +56,24 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function organizationManager()
+    {
+        return $this->hasOne(Organization::class, 'manager_id', 'id');
+    }
+
+    public function driver()
+    {
+        return $this->hasOne(Driver::class);
+    }
+
+    public function passengerBoardings()
+    {
+        return $this->hasMany(PassengerBoarding::class);
+    }
 }
