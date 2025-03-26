@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Laravel 11 Custom Reset Password Functions</title>
+  <title>BusLink Reset Password</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <style type="text/css">
     body {
@@ -36,7 +36,7 @@
           <div class="card-body p-3 p-md-4 p-xl-5">
             <div class="text-center mb-3">
               <h2 class="text-primary">
-                Reside Smart
+                BusLink
               </h1>
             </div>
             <h2 class="fs-6 fw-normal text-center text-secondary mb-4">Reset Password</h2>

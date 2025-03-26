@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reside Smart Email Verification</title>
+    <title>Bus Link Email Verification</title>
 </head>
 <body>
     <h2>Verify Your Email</h2>
