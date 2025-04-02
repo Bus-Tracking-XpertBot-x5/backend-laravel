@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('phone_number', 20)->unique();
+            $table->string('phone_number', 20)->unique()->default('33');
             $table->timestamp('phone_number_verified_at')->nullable();
             $table->string('password');
             $table->enum('role', ["admin", "manager", "driver", "passenger"]);

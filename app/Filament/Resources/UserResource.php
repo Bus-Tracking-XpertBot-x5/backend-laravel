@@ -60,7 +60,7 @@ class UserResource extends Resource
                                 'admin' => 'Admin',
                                 'manager' => 'Manager',
                                 'driver' => 'Driver',
-                                // 'passenger' => 'Passenger',
+                                'passenger' => 'Passenger',
                             ])
                             ->required()
                             ->default('manager')

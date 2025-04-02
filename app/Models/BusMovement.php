@@ -36,4 +36,7 @@ class BusMovement extends Model
     {
         return $this->hasMany(PassengerBoarding::class);
     }
+    public function organization(){
+        return $this->belongsTo(Organization::class);
+    }
 }

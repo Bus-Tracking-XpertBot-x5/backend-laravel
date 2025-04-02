@@ -99,10 +99,10 @@ class BusResource extends Resource
                         'maintenance' => 'Under Maintenance',
                     ])
             ])
-            ->actions([
-                Tables\Actions\EditAction::make()->iconSize('lg')->color('secondary')->hiddenLabel(),
-                Tables\Actions\DeleteAction::make()->iconSize('lg')->hiddenLabel(),
-            ])
+                ->actions([
+                    Tables\Actions\EditAction::make()->iconSize('lg')->color('secondary')->hiddenLabel(),
+                    Tables\Actions\DeleteAction::make()->iconSize('lg')->hiddenLabel(),
+                ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
