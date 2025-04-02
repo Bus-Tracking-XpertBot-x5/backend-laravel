@@ -63,10 +63,10 @@ class UserResource extends Resource
                                 // 'passenger' => 'Passenger',
                             ])
                             ->required()
+                            ->searchable()
                             ->default('manager')
                             ->label('User Role')
                             ->columnSpan(1),
-
                     ])->columns(2)
             ]);
     }
