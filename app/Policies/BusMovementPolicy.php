@@ -14,7 +14,7 @@ class BusMovementPolicy
     public function viewAny(User $user): bool
     {
         
-        return $user->role==="admin" ;
+        return $user->role==="admin" || $user->role==="manager";
     }
 
     /**
@@ -22,6 +22,7 @@ class BusMovementPolicy
      */
     public function view(User $user, BusMovement $busMovement): bool
     {
+        dd("hello");
         if($user->role==="admin"){
             return true;
         }
