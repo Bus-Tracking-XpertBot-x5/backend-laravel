@@ -2,27 +2,25 @@
 
 namespace App\Policies;
 
-use App\Models\BusMovement;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class BusMovementPolicy
+class UserPolicy
 {
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        
         return $user->role==="admin" || $user->role==="manager";
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, BusMovement $busMovement): bool
+    public function view(User $user, User $model): bool
     {
-        return false;
+        return $user->role==="admin" || $user->role==="manager";
     }
 
     /**
@@ -36,23 +34,23 @@ class BusMovementPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, BusMovement $busMovement): bool
+    public function update(User $user, User $model): bool
     {
-        return $user->role==="admin" || $user->role==="manager";
+        return $user->role==="admin";
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, BusMovement $busMovement): bool
+    public function delete(User $user, User $model): bool
     {
-        return $user->role==="admin" || $user->role==="manager";
+        return $user->role==="admin";
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, BusMovement $busMovement): bool
+    public function restore(User $user, User $model): bool
     {
         return $user->role==="admin" || $user->role==="manager";
     }
@@ -60,7 +58,7 @@ class BusMovementPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, BusMovement $busMovement): bool
+    public function forceDelete(User $user, User $model): bool
     {
         return $user->role==="admin" || $user->role==="manager";
     }

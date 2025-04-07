@@ -6,6 +6,8 @@ use App\Filament\Resources\BusResource\Pages;
 use App\Filament\Resources\BusResource\RelationManagers;
 use App\Models\Bus;
 use App\Models\Driver;
+use Auth;
+use DB;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -107,11 +109,23 @@ class BusResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                if (Auth::user()->role === 'manager') {
+                    // Get the manager's organization ID
+                    $managerOrganizationId = Auth::user()->organization_id;
+
+                    // Filter buses that belong to the manager's organization
+                    return $query->whereHas('organizations', function ($q) use ($managerOrganizationId) {
+                        $q->where('organization_id', $managerOrganizationId);
+                    });
+                }
+            });
     }
 
     public static function getRelations(): array
     {
+
         return [
             //
         ];

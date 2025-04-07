@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
+use Auth;
 use Filament\Forms;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Form;
@@ -56,14 +57,28 @@ class UserResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->columnSpan(1),
                         Forms\Components\Select::make('role')
-                            ->options([
-                                'admin' => 'Admin',
-                                'manager' => 'Manager',
-                                'driver' => 'Driver',
-                                'passenger' => 'Passenger',
-                            ])
+                            ->options(function () {
+                                $user = Auth::user();
+                                // If the user is a manager, restrict the options
+                                if ($user && $user->role === 'manager') {
+                                    return [
+                                        'driver' => 'Driver',
+                                    ];
+                                }
+
+                                // Otherwise, allow all roles
+                                return [
+                                    'admin' => 'Admin',
+                                    'manager' => 'Manager',
+                                    'driver' => 'Driver',
+                                    'passenger' => 'Passenger',
+                                ];
+                            })
                             ->required()
-                            ->default('manager')
+                            ->default(function () {
+                                $user = Auth::user();
+                                return ($user && $user->role === 'manager') ? 'driver' : 'manager';
+                            })
                             ->label('User Role')
                             ->columnSpan(1),
 
@@ -105,8 +120,13 @@ class UserResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                ])
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                if (Auth::user()->role === 'manager') {
+                    return $query->where(['organization_id' => Auth::user()->organization_id, 'role' => 'passenger']);
+                }
+            });
     }
 
     public static function getRelations(): array

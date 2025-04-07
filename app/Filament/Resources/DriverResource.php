@@ -6,6 +6,7 @@ use App\Filament\Resources\DriverResource\Pages;
 use App\Filament\Resources\DriverResource\RelationManagers;
 use App\Models\Driver;
 use App\Models\User;
+use Auth;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -57,16 +58,8 @@ class DriverResource extends Resource
                             ->label('User')
                     ])->columns(2),
 
-                Forms\Components\Section::make()
-                    ->schema([
-                        Forms\Components\Select::make('organizations')
-                            ->label('Assign Organizations')
-                            ->relationship('organizations', 'name') // Use the relationship method from the model
-                            ->multiple()
-                            ->searchable()
-                            ->preload(),
-                    ])->columns(2),
-
+                Forms\Components\Hidden::make('organizations')
+                    ->default(fn() => Auth::check() ? (string) Auth::user()->organization->id : ''),
             ]);
     }
 
@@ -91,7 +84,19 @@ class DriverResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                if (Auth::user()->role === 'manager') {
+                    // Get the manager's organization ID
+                    $managerOrganizationId = Auth::user()->organization_id;
+
+                    // Filter drivers that belong to the manager's organization
+                    return $query->whereHas('organizations', function ($q) use ($managerOrganizationId) {
+                        $q->where('organization_id', $managerOrganizationId);
+                    });
+                }
+            })
+        ;
     }
 
     public static function getRelations(): array
