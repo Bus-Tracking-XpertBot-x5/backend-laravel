@@ -57,9 +57,6 @@ class DriverResource extends Resource
                             ->required()
                             ->label('User')
                     ])->columns(2),
-
-                Forms\Components\Hidden::make('organizations')
-                    ->default(fn() => Auth::check() ? (string) Auth::user()->organization->id : ''),
             ]);
     }
 

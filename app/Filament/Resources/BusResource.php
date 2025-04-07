@@ -56,9 +56,18 @@ class BusResource extends Resource
                         ->columnSpan(1),
                     Forms\Components\Select::make('driver_id')
                         ->options(
-                            Driver::all()
-                                ->pluck('user.name', 'id')
-                                ->toArray()
+                            function () {
+                                if (Auth::user()->role === 'manager') {
+                                    return Driver::whereHas('organizations', function ($query) {
+                                        $query->where('organization_id', Auth::user()->organization_id);
+                                    })->get()
+                                        ->pluck('user.name', 'id')
+                                        ->toArray();
+                                }
+                                return Driver::all()
+                                    ->pluck('user.name', 'id')
+                                    ->toArray();
+                            }
                         )
                         ->required()
                         ->label('Driver')
