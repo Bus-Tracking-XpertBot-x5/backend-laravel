@@ -77,10 +77,12 @@ class BusResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('organizations')
                             ->label('Assign Organizations')
-                            ->relationship('organizations', 'name') // Use the relationship method from the model
+                            ->relationship('organizations', 'name')
                             ->multiple()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->default(fn() => Auth::user()->role === 'manager' ? [Auth::user()->organization_id] : [])
+                            ->hidden(fn() => Auth::user()->role === 'manager'),
                     ])->columns(2),
             ]);
     }

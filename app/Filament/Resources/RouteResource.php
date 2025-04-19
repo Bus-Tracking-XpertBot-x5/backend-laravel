@@ -20,6 +20,7 @@ class RouteResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-uturn-left';
 
+
     public static function form(Form $form): Form
     {
         return $form
