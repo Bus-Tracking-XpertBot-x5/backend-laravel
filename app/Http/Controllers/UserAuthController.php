@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EmailVerificationMail;
+use App\Models\Organization;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class UserAuthController extends Controller
 {
@@ -28,7 +30,7 @@ class UserAuthController extends Controller
     {
         return \response()->json(
             [
-                'user' => Auth::user()
+                'user' => Auth::user()->load('organization')
             ],
             200
         );
@@ -77,6 +79,7 @@ class UserAuthController extends Controller
         }
 
         $user = Auth::user();
+        $user->load('organization');
         $token = $user->createToken('auth_token')->plainTextToken;
         return response()->json([
             'message' => 'User loggedin successfully',
@@ -92,6 +95,76 @@ class UserAuthController extends Controller
         return response()->json([
             'message' => 'Logged out successfully',
         ], 200);
+    }
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user(); // Authenticated user
+
+        $validator = $request->validate([
+            'name' => 'required|string|max:100',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone_number' => 'required|string|unique:users,phone_number,' . $user->id,
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+        ]);
+
+        return response()->json([
+            'message' => 'Profile updated successfully.',
+            'user' => $user
+        ]);
+    }
+
+    public function updateLocation(Request $request)
+    {
+        $user = Auth::user(); // Authenticated user
+
+        // Validate the request data
+        $validatedData = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        // Update the user's profile and location
+        $user->update($validatedData);
+
+        return response()->json([
+            'message' => 'Profile and location updated successfully.',
+            'user' => $user
+        ]);
+    }
+
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'old_password' => ['required'],
+            'new_password' => ['required', 'string', 'min:6'],
+            'confirm_password' => ['required', 'same:new_password'],
+        ]);
+        $user = Auth::user();
+
+        if (!Hash::check($request->old_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'old_password' => ['The old password is incorrect.'],
+            ]);
+        }
+        if (($request->old_password === $request->new_password)) {
+            throw ValidationException::withMessages([
+                'old_password' => ["The new and old password should't be the same."],
+                'new_password' => ["The new old password should't be the same."],
+            ]);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully',
+        ]);
     }
 
     public function verifyEmail(Request $request)
@@ -194,5 +267,32 @@ class UserAuthController extends Controller
                 'email' => $request->query('email')
             ]
         );
+    }
+
+    public function updateOrganization(Request $request)
+    {
+        $validatedData = $request->validate([
+            'organization_id' => 'required|exists:organizations,id'
+        ]);
+
+        $updateUser = Auth::user()->update($validatedData);
+
+        return response()->json([
+            'message' => 'Profile completed successfully!',
+            'organization' => Organization::find($request->organization_id)
+        ], 200);
+    }
+
+    public function storeDeviceToken(Request $request)
+    {
+        $request->validate([
+            'device_token' => 'required|string',
+        ]);
+
+        $user = auth()->user();
+        $user->device_token = $request->device_token;
+        $user->save();
+
+        return response()->json(['message' => 'Device token saved successfully.']);
     }
 }
