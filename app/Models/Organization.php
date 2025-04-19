@@ -35,4 +35,9 @@ class Organization extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function busMovements()
+    {
+        return $this->hasMany(BusMovement::class);
+    }
 }
