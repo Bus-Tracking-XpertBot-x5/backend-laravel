@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendNotificationJob;
 use App\Models\BusMovement;
 use App\Models\PassengerBoarding;
+use App\Models\User;
 use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -106,28 +108,9 @@ class PassengerBoardingController extends Controller
         $created = PassengerBoarding::create($validatedData);
 
         $created->load(['movement.bus.driver.user', 'movement.route', 'movement.organization', 'user']);
+
+        SendNotificationJob::dispatch(Auth::user()->device_token, 'Passenger Boarded Successfully!.', 'You boarded successfully in a trip!');
+
         return response()->json($created);
-    }
-
-    public function triggerStatus(Request $request)
-    {
-        $validatedData = $request->validate([
-            'passenger_boarding_id' => "required|exists:passenger_boardings,id",
-            "status" => "required|in:scheduled,boarded"
-        ]);
-
-        $passengerBoarding = PassengerBoarding::with('movement')->findOrFail($validatedData['passenger_boarding_id']);
-
-        if ($passengerBoarding->movement->status == "in_progress") {
-            return response()->json(['message' => "Trip hasn't started yet!"], 400);
-        }
-
-        $passengerBoarding->update([
-            'status' => $validatedData['status']
-        ]);
-
-        return response()->json([
-            'message' => 'Status Updated Successfully!',
-        ], 200);
     }
 }

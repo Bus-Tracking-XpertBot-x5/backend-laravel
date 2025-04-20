@@ -29,7 +29,8 @@ class User extends Authenticatable
         'email_verification_code',
         'latitude',
         'longitude',
-        'organization_id'
+        'organization_id',
+        'device_token'
     ];
 
     /**

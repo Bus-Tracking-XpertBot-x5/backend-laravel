@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/driver/user', [DriverController::class, 'getByUserId']);
     Route::get('/driver/buses', [DriverController::class, 'getDriverBuses']);
     Route::put('/driver', [DriverController::class, 'updateDriverLicense']);
+    Route::post('/driver/notify-passenger', [DriverController::class, 'notifyPassenger']);
 
     Route::get('/organizations', [OrganizationController::class, 'index']);
     Route::get('/organizations/driver', [OrganizationController::class, 'getDriverOrganizations']);
@@ -39,11 +40,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bus-movements', [BusMovementController::class, 'createTrip']);
     Route::get('/bus-movements/driver', [BusMovementController::class, 'getDriverTrips']);
     Route::get('/bus-movements/single', [BusMovementController::class, 'getSingleTrip']);
+    Route::get('/bus-movement/single/passenger-boardings', [BusMovementController::class, 'getTripBoardings']);
     Route::put('/bus-movements/status', [BusMovementController::class, 'triggerStatus']);
 
     Route::get('/passenger-boardings', [PassengerBoardingController::class, 'index']);
     Route::post('/passenger-boardings', [PassengerBoardingController::class, 'store']);
-    Route::put('/passenger-boardings/status', [PassengerBoardingController::class, 'triggerStatus']);
+    Route::put('/passenger-boardings/status', [DriverController::class, 'triggerPassengerBoardingStatus']);
 
     Route::get('/bus-routes', [RouteController::class, 'index']);
 });

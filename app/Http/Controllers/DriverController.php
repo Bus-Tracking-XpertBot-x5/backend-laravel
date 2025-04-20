@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendNotificationJob;
 use App\Models\Driver;
+use App\Models\PassengerBoarding;
+use App\Models\User;
 use Auth;
 use Illuminate\Http\Request;
 
@@ -54,6 +57,69 @@ class DriverController extends Controller
         ]);
         return response()->json([
             'message' => 'License number updated successfully!'
+        ], 200);
+    }
+
+    public function notifyPassenger(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        // Replace this with middlewares
+        $driver = Auth::user();
+
+        // Check if the authenticated user is a driver
+        if ($driver->role !== 'driver') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $passenger = User::find($request->user_id);
+
+        SendNotificationJob::dispatch($passenger->device_token, 'Your bus is approaching!.', "Driver {$driver->name} is nearing your location!");
+
+        return response()->json(['message' => 'Passenger notified successfully.'], 200);
+    }
+
+    public function triggerPassengerBoardingStatus(Request $request)
+    {
+        $validatedData = $request->validate([
+            'passenger_boarding_id' => 'required|exists:passenger_boardings,id',
+            'status' => 'required|in:scheduled,boarded,missed',
+        ]);
+
+        $passengerBoarding = PassengerBoarding::with('movement')->findOrFail($validatedData['passenger_boarding_id']);
+        $movement = $passengerBoarding->movement;
+
+        if ($passengerBoarding->status === 'boarded') {
+            return response()->json(['message' => "Already boarded!"], 400);
+        }
+        if ($movement->status === 'scheduled') {
+            return response()->json(['message' => "Trip hasn't started yet!"], 400);
+        }
+
+        if ($movement->status === 'completed') {
+            return response()->json(['message' => "Trip has ended!"], 400);
+        }
+
+        if ($movement->status === 'cancelled') {
+            return response()->json(['message' => "Trip has been cancelled!"], 400);
+        }
+
+        $passengerBoarding->update([
+            'status' => $validatedData['status'],
+        ]);
+
+        if ($validatedData['status'] === 'boarded') {
+            $movement->increment('actual_passenger_count');
+        }
+
+        return response()->json([
+            'message' => 'Status updated successfully!',
+            'data' => [
+                'actual_passenger_count' => $movement->actual_passenger_count,
+                'passengerBoarding' => $passengerBoarding
+            ]
         ], 200);
     }
 }

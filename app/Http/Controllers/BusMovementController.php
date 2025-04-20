@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendNotificationJob;
 use App\Models\BusMovement;
 use Auth;
 use Carbon\Carbon;
@@ -69,7 +70,7 @@ class BusMovementController extends Controller
     {
         $validatedData = $request->validate([
             'movement_id' => "required|exists:bus_movements,id",
-            "status" => "required|in:scheduled,in_progress,completed,canceled"
+            "status" => "required|in:scheduled,in_progress,completed,cancelled"
         ]);
 
         $trip = BusMovement::findOrFail($request->movement_id);
@@ -89,20 +90,20 @@ class BusMovementController extends Controller
                 ], 409);
             } else {
                 $trip->update([
-                    'status' => "in_progress"
+                    'status' => "in_progress",
+                    "actual_start" => Carbon::now()
                 ]);
 
                 foreach ($boardedPassengers as $value) {
-                    NotificationController::sendNotification($value->user->device_token, 'Trip has started.', "The trip " . $trip->route->route_name . " has started!");
+                    SendNotificationJob::dispatch($value->user->device_token, 'Trip has started.', "The trip " . $trip->route->route_name . " has started!");
                 }
 
                 return response()->json([
-                    'message' => 'Status Updated Successfully!',
+                    'message' => 'Trip has started Successfully!',
                     'data' => $trip
                 ], 200);
             }
-        }
-        if ($request->status === 'completed') {
+        } else if ($request->status === 'completed') {
             // Retrieve all passenger boardings with status 'boarded' for this trip
             $boardedPassengers =
                 $trip
@@ -116,25 +117,51 @@ class BusMovementController extends Controller
                     'message' => 'No passengers boarded yet!',
                 ], 409);
             }
-            if ($boardedPassengers === $trip->passengerBoardings()->count()) {
+            if (count($boardedPassengers) === $trip->passengerBoardings()->count()) {
                 $trip->update([
                     'status' => "completed",
-                    'data' => $trip
+                    "actual_end" => Carbon::now()
                 ]);
 
                 foreach ($boardedPassengers as $value) {
-                    NotificationController::sendNotification($value->user->device_token, 'Trip has ended.', "The trip " . $trip->route->route_name . " has ended!");
+                    SendNotificationJob::dispatch($value->user->device_token, 'Trip has ended.', "The trip " . $trip->route->route_name . " has ended!");
                 }
 
                 return response()->json([
                     'message' => 'Status Updated Successfully!',
+                    'data' => $trip
                 ], 200);
             } else {
                 return response()->json([
                     'message' => 'Passengers still not on board!',
                 ], 409);
             }
+        } else if ($request->status === 'cancelled') {
+            // Retrieve all passenger boardings with status 'boarded' for this trip
+            $boardedPassengers =
+                $trip
+                ->passengerBoardings()
+                ->with('user')
+                ->where('status', 'boarded')
+                ->get();
+
+            if (count($boardedPassengers) == 0) {
+                $trip->update([
+                    'status' => "cancelled",
+                ]);
+                foreach ($boardedPassengers as $value) {
+                    SendNotificationJob::dispatch($value->user->device_token, 'Trip has been cancelled!.', "The trip " . $trip->route->route_name . " has been cancelled!");
+                }
+                return response()->json([
+                    'message' => 'Trip cancelled successfully!',
+                ], 200);
+            } else {
+                return response()->json([
+                    'message' => "Passengers registered! Trip can't be cancelled!",
+                ], 409);
+            }
         }
+
 
         return response()->json([
             'message' => 'Status Updated Successfully!',
@@ -179,6 +206,45 @@ class BusMovementController extends Controller
 
         return response()->json([
             'message' => 'Trip created successfully',
+        ], 200);
+    }
+
+    public function getTripBoardings(Request $request)
+    {
+        $request->validate([
+            'movement_id' => 'required|exists:bus_movements,id',
+            'status' => 'nullable|in:all,scheduled,boarded,missed',
+            'search' => 'nullable|string'
+        ]);
+
+        $trip = BusMovement::find($request->movement_id);
+
+        $query = $trip
+            ->passengerBoardings()
+            ->with(['user']);
+
+        if ($request->status !== null && $request->status !== "all") {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->search !== null && $request->search !== "all") {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $data = $query->get();
+
+        if (!$data) {
+            return response()->json([
+                'message' => 'No Passenger Boardings Found!',
+                'data' => []
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Trips found successfully!',
+            'data' => $data
         ], 200);
     }
 }
