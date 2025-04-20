@@ -6,6 +6,8 @@ use App\Filament\Resources\BusResource\Pages;
 use App\Filament\Resources\BusResource\RelationManagers;
 use App\Models\Bus;
 use App\Models\Driver;
+use Auth;
+use DB;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -54,9 +56,18 @@ class BusResource extends Resource
                         ->columnSpan(1),
                     Forms\Components\Select::make('driver_id')
                         ->options(
-                            Driver::all()
-                                ->pluck('user.name', 'id')
-                                ->toArray()
+                            function () {
+                                if (Auth::user()->role === 'manager') {
+                                    return Driver::whereHas('organizations', function ($query) {
+                                        $query->where('organization_id', Auth::user()->organization_id);
+                                    })->get()
+                                        ->pluck('user.name', 'id')
+                                        ->toArray();
+                                }
+                                return Driver::all()
+                                    ->pluck('user.name', 'id')
+                                    ->toArray();
+                            }
                         )
                         ->required()
                         ->label('Driver')
@@ -66,10 +77,12 @@ class BusResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('organizations')
                             ->label('Assign Organizations')
-                            ->relationship('organizations', 'name') // Use the relationship method from the model
+                            ->relationship('organizations', 'name')
                             ->multiple()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->default(fn() => Auth::user()->role === 'manager' ? [Auth::user()->organization_id] : [])
+                            ->hidden(fn() => Auth::user()->role === 'manager'),
                     ])->columns(2),
             ]);
     }
@@ -107,11 +120,23 @@ class BusResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->modifyQueryUsing(function (Builder $query) {
+                if (Auth::user()->role === 'manager') {
+                    // Get the manager's organization ID
+                    $managerOrganizationId = Auth::user()->organization_id;
+
+                    // Filter buses that belong to the manager's organization
+                    return $query->whereHas('organizations', function ($q) use ($managerOrganizationId) {
+                        $q->where('organization_id', $managerOrganizationId);
+                    });
+                }
+            });
     }
 
     public static function getRelations(): array
     {
+
         return [
             //
         ];

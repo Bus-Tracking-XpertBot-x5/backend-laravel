@@ -14,7 +14,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
             $table->string('description')->nullable();
-            $table->foreignId('manager_id')->nullable()->constrained('users')->unique();
+            $table->foreignId('manager_id')->nullable()->constrained('users')->unique()->onUpdate('cascade');
             $table->timestamps();
         });
     }
