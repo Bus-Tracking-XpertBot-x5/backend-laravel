@@ -17,7 +17,7 @@ return new class extends Migration
             $table->dateTime('actual_start')->nullable();
             $table->dateTime('actual_end')->nullable();
             $table->integer('passenger_count');
-            $table->enum('status', ['scheduled', 'in_progress', 'completed', 'canceled'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'in_progress', 'completed', 'cancelled'])->default('scheduled');
             $table->timestamps();
         });
     }

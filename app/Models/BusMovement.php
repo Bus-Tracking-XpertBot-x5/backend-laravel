@@ -14,12 +14,19 @@ class BusMovement extends Model
         'actual_start',
         'actual_end',
         'passenger_count',
-        'status'
+        'status',
+        'booked_passenger_count',
+        'actual_passenger_count',
+        'organization_id',
     ];
 
     public function bus()
     {
         return $this->belongsTo(Bus::class);
+    }
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function route()
@@ -34,9 +41,6 @@ class BusMovement extends Model
 
     public function passengerBoardings()
     {
-        return $this->hasMany(PassengerBoarding::class);
-    }
-    public function organization(){
-        return $this->belongsTo(Organization::class);
+        return $this->hasMany(PassengerBoarding::class, 'movement_id', 'id');
     }
 }
