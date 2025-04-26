@@ -176,6 +176,7 @@ class BusMovementController extends Controller
             'bus_id' => 'required|exists:buses,id',
             'estimated_start' => 'required|date',
             'estimated_end' => 'required|date|after:estimated_start',
+            'price' => "required"
         ]);
 
         $start = Carbon::parse($request['estimated_start']);
