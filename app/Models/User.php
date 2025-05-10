@@ -35,7 +35,10 @@ class User extends Authenticatable implements FilamentUser
         'email_verification_code',
         'latitude',
         'longitude',
-        'organization_id',
+        'organization_id'
+    ];
+
+    protected $guarded = [
         'device_token'
     ];
 

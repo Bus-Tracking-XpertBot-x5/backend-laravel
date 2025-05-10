@@ -15,7 +15,7 @@ class PassengerBoardingController extends Controller
     public function index(Request $request)
     {
         $request->validate([
-            'status' => 'nullable|in:all,scheduled,boarded,missed',
+            'status' => 'nullable|in:all,scheduled,boarded,missed,departed',
             'search' => 'nullable|string'
         ]);
 
