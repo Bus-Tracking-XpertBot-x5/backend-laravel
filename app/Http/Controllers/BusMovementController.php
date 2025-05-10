@@ -63,7 +63,7 @@ class BusMovementController extends Controller
             BusMovement::with(['bus.driver.user', 'route', 'organization', 'bus.driver', 'passengerBoardings.user'])
                 ->find($request->movement_id),
             200
-        );;
+        );
     }
 
     public function triggerStatus(Request $request)
@@ -248,4 +248,135 @@ class BusMovementController extends Controller
             'data' => $data
         ], 200);
     }
+
+    public function getNextTrip(Request $request)
+    {
+        $user = Auth::user();
+        
+        $nextTrip = $user->passengerBoardings()
+            ->where('status', 'scheduled')
+            ->with(['movement' => function($query) {
+                $query->with(['bus.driver.user', 'route']);
+            }])
+            ->orderBy('estimated_boarding_time', 'asc')
+            ->first();
+
+        if (!$nextTrip) {
+            return response()->json([
+                'message' => 'No upcoming trips found!',
+                'data' => null
+            ], 404);
+        }
+
+        $data = [
+            'estimated_boarding_time' => $nextTrip->estimated_boarding_time,
+            'route_name' => $nextTrip->movement->route->route_name,
+            'bus_name' => $nextTrip->movement->bus->name,
+            'driver_name' => $nextTrip->movement->bus->driver->user->name,
+            'estimated_end' => $nextTrip->movement->estimated_end
+        ];
+
+        return response()->json([
+            'message' => 'Next trip found successfully!',
+            'data' => $data
+        ], 200);
+    }
+
+    public function getCurrentTrip(Request $request)
+    {
+        $user = Auth::user();
+        
+        $boarded_trip_boarding = $user->passengerBoardings()
+            ->where('status', 'boarded')
+            ->with(['movement.bus.driver.user', 'movement.route'])
+            ->first();
+
+        if (!$boarded_trip_boarding) {
+            return response()->json([
+                'message' => 'No current trips found!',
+                'data' => null
+            ], 404);
+        }
+
+        $current_trip = $boarded_trip_boarding->movement;
+        $remaining_passengers = $current_trip->passengerBoardings()
+            ->where('status', 'scheduled')
+            ->count();
+
+        $data = [
+            'passengers' => $current_trip->actual_passenger_count,
+            'remaining_passengers' => $remaining_passengers,
+            'route' => $current_trip->route->route_name,
+            'bus' => $current_trip->bus->name,
+            'driver' => $current_trip->bus->driver->user->name,
+            'estimated_end' => $current_trip->estimated_end
+        ];
+
+        return response()->json([
+            'message' => 'Current trip found successfully!',
+            'data' => $data
+        ], 200);
+    }
+
+    public function getTripHistory(Request $request)
+    {
+        $user = Auth::user();
+        
+        $history = $user->passengerBoardings()
+            ->whereIn('status', ['missed', 'departed'])
+            ->with(['movement' => function($query) {
+                $query->with(['bus.driver.user', 'route']);
+            }])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10)
+            ->map(function($boarding) {
+                return [
+                    'boarding' => [
+                        'id' => $boarding->id,
+                        'status' => $boarding->status,
+                        'boarding_time' => $boarding->estimated_boarding_time,
+                        'created_at' => $boarding->created_at
+                    ],
+                    'trip' => [
+                        'id' => $boarding->movement->id,
+                        'route_name' => $boarding->movement->route->route_name,
+                        'bus_name' => $boarding->movement->bus->name,
+                        'driver_name' => $boarding->movement->bus->driver->user->name,
+                        'start_time' => $boarding->movement->estimated_start,
+                        'end_time' => $boarding->movement->estimated_end,
+                        'status' => $boarding->movement->status
+                    ]
+                ];
+            });
+
+        return response()->json([
+            'message' => 'Trip history retrieved successfully',
+            'data' => $history
+        ], 200);
+    }
+
+    public function getTripStatistics(Request $request)
+    {
+        $user = Auth::user();
+        $startOfMonth = Carbon::now()->startOfMonth();
+        
+        $statistics = $user->passengerBoardings()
+            ->where('created_at', '>=', $startOfMonth)
+            ->get()
+            ->groupBy('status')
+            ->map(function($boardings) {
+                return $boardings->count();
+            });
+
+        return response()->json([
+            'message' => 'Trip statistics retrieved successfully',
+            'data' => [
+                'total_trips' => $statistics->sum(),
+                'completed' => $statistics->get('departed', 0),
+                'missed' => $statistics->get('missed', 0),
+                'scheduled' => $statistics->get('scheduled', 0)
+            ]
+        ], 200);
+    }
+
 }

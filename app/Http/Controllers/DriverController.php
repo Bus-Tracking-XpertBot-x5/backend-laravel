@@ -6,7 +6,10 @@ use App\Jobs\SendNotificationJob;
 use App\Models\Driver;
 use App\Models\PassengerBoarding;
 use App\Models\User;
+use App\Models\Bus;
+use App\Models\BusMovement;
 use Auth;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DriverController extends Controller
@@ -85,7 +88,7 @@ class DriverController extends Controller
     {
         $validatedData = $request->validate([
             'passenger_boarding_id' => 'required|exists:passenger_boardings,id',
-            'status' => 'required|in:scheduled,boarded,missed',
+            'status' => 'required|in:scheduled,boarded,missed,departed',
         ]);
 
         $passengerBoarding = PassengerBoarding::with('movement')->findOrFail($validatedData['passenger_boarding_id']);
@@ -121,5 +124,113 @@ class DriverController extends Controller
                 'passengerBoarding' => $passengerBoarding
             ]
         ], 200);
+    }
+
+    public function getScheduledPassengers(){
+        $driver = Auth::user()->driver;
+
+        $activeBus = Bus::where('driver_id', $driver->id)
+                         ->where('status', 'active')
+                         ->first();
+        
+        if (!$activeBus){
+                return response()->json(['message' => 'No active bus found'], 404);
+            }
+        
+        $scheduledMovement = BusMovement::where('bus_id', $activeBus->id)
+        ->where('status', 'in_progress')
+        ->first();
+        
+        $boardingUserIds = PassengerBoarding::where('movement_id', $scheduledMovement->id)
+        ->where('status', 'scheduled')
+        ->pluck('user_id');
+
+        $passengers = User::whereIn('id', $boardingUserIds)->get(['id','name']);
+        $count=User::whereIn('id', $boardingUserIds)->count();
+
+        return response()->json([
+            'count' => $count,
+            'passengers' => $passengers
+        ]);
+    }
+
+    public function getBoardedPassengers(){
+        $driver = Auth::user()->driver;
+
+        $activeBus = Bus::where('driver_id', $driver->id)
+                         ->where('status', 'active')
+                         ->first();
+        
+        if (!$activeBus){
+                return response()->json(['message' => 'No active bus found'], 404);
+            }
+        
+        $scheduledMovement = BusMovement::where('bus_id', $activeBus->id)
+        ->where('status', 'in_progress')
+        ->first();
+        
+        $boardingUserIds = PassengerBoarding::where('movement_id', $scheduledMovement->id)
+        ->where('status', 'boarded')
+        ->pluck('user_id');
+
+        $passengers = User::whereIn('id', $boardingUserIds)->get(['id','name']);
+        $count = User::whereIn('id', $boardingUserIds)->count();
+
+        return response()->json([
+            'count' => $count,
+            'passengers' => $passengers
+        ]);
+    }
+
+    public function getMonthlyMoney(){
+        $currentMonth = Carbon::now()->month;
+
+        $driver = Auth::user()->driver;
+        
+        $buses =  Bus::where('driver_id', $driver->id)->get();
+        
+        $busIds =  $buses->pluck('id');
+
+        $trips = BusMovement::whereIn('bus_id', $busIds)
+        ->where('status', 'completed')
+        ->whereMonth('actual_start', $currentMonth)
+        ->with(['passengerBoardings' => function($query) {
+            $query->where('status', 'boarded');
+        }])
+        ->get();
+
+        $totalMoney = $trips->reduce(function ($carry, $trip) {
+            $passengerCount = $trip->passengerBoardings->count();
+            $tripRevenue = $passengerCount * $trip->price;
+            return $carry + $tripRevenue;
+        }, 0);
+    
+        return $totalMoney;
+    }
+
+    public function getMonthlyTime(){
+        $currentMonth = Carbon::now()->month;
+
+        $driver = Auth::user()->driver;
+        
+        $buses =  Bus::where('driver_id', $driver->id)->get();
+        
+        $busIds =  $buses->pluck('id');
+
+        $trips = BusMovement::whereIn('bus_id', $busIds)
+            ->where('status', 'completed')
+            ->whereMonth('actual_start', $currentMonth);
+        
+        $totalMinutes = $trips->get()->sum(function($trip) {
+            return Carbon::parse($trip->actual_start)->diffInMinutes($trip->actual_end);
+        });
+
+        $hours = floor($totalMinutes/60);
+        $remaining_minutes = $totalMinutes%60;
+
+        return response()->json([
+            'hours' => $hours,
+            'minutes' => $remaining_minutes
+        ]);
     }
 }

@@ -82,7 +82,7 @@ class UserAuthController extends Controller
         $user->load('organization');
         $token = $user->createToken('auth_token')->plainTextToken;
         return response()->json([
-            'message' => 'User loggedin successfully',
+            'message' => 'User logged in successfully',
             'user' => $user,
             'token' => $token,
         ], 200);
@@ -289,7 +289,7 @@ class UserAuthController extends Controller
             'device_token' => 'required|string',
         ]);
 
-        $user = auth()->user();
+        $user = Auth::user();
         $user->device_token = $request->device_token;
         $user->save();
 
