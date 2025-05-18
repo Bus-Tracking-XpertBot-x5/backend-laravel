@@ -6,7 +6,6 @@ use App\Filament\Resources\BusResource\Pages;
 use App\Filament\Resources\BusResource\RelationManagers;
 use App\Models\Bus;
 use App\Models\Driver;
-use Auth;
 use DB;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,7 +14,9 @@ use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class BusResource extends Resource
 {

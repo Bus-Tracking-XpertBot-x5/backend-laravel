@@ -17,8 +17,10 @@ use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth; // Ensure Auth facade is imported
+
 class BusMovementResource extends Resource
 {
     protected static ?string $model = BusMovement::class;
@@ -129,9 +131,9 @@ class BusMovementResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->modifyQueryUsing(function (Builder $query) { 
-                if (Auth::user()->role === 'manager') { 
-                    return $query->where('organization_id', Auth::user()->organization_id); 
+            ->modifyQueryUsing(function (Builder $query) {
+                if (Auth::user()->role === 'manager') {
+                    return $query->where('organization_id', Auth::user()->organization_id);
                 }
             });
     }
@@ -151,9 +153,4 @@ class BusMovementResource extends Resource
             'edit' => Pages\EditBusMovement::route('/{record}/edit'),
         ];
     }
-
-    
-
-
-
 }

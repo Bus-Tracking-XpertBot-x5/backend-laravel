@@ -8,9 +8,9 @@ use App\Models\PassengerBoarding;
 use App\Models\User;
 use App\Models\Bus;
 use App\Models\BusMovement;
-use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DriverController extends Controller
 {
@@ -126,54 +126,34 @@ class DriverController extends Controller
         ], 200);
     }
 
-    public function getScheduledPassengers(){
+    public function getScheduledPassengers()
+    {
         $driver = Auth::user()->driver;
 
         $activeBus = Bus::where('driver_id', $driver->id)
-                         ->where('status', 'active')
-                         ->first();
-        
-        if (!$activeBus){
-                return response()->json(['message' => 'No active bus found'], 404);
-            }
-        
+            ->where('status', 'active')
+            ->first();
+
+        if (!$activeBus) {
+            return response()->json(['message' => 'No active bus found'], 404);
+        }
+
         $scheduledMovement = BusMovement::where('bus_id', $activeBus->id)
-        ->where('status', 'in_progress')
-        ->first();
-        
+            ->where('status', 'in_progress')
+            ->first();
+
+        if (!$scheduledMovement) {
+            return response()->json([
+                'count' => 0,
+                'passengers' => 0
+            ]);
+        }
+
         $boardingUserIds = PassengerBoarding::where('movement_id', $scheduledMovement->id)
-        ->where('status', 'scheduled')
-        ->pluck('user_id');
+            ->where('status', 'scheduled')
+            ->pluck('user_id');
 
-        $passengers = User::whereIn('id', $boardingUserIds)->get(['id','name']);
-        $count=User::whereIn('id', $boardingUserIds)->count();
-
-        return response()->json([
-            'count' => $count,
-            'passengers' => $passengers
-        ]);
-    }
-
-    public function getBoardedPassengers(){
-        $driver = Auth::user()->driver;
-
-        $activeBus = Bus::where('driver_id', $driver->id)
-                         ->where('status', 'active')
-                         ->first();
-        
-        if (!$activeBus){
-                return response()->json(['message' => 'No active bus found'], 404);
-            }
-        
-        $scheduledMovement = BusMovement::where('bus_id', $activeBus->id)
-        ->where('status', 'in_progress')
-        ->first();
-        
-        $boardingUserIds = PassengerBoarding::where('movement_id', $scheduledMovement->id)
-        ->where('status', 'boarded')
-        ->pluck('user_id');
-
-        $passengers = User::whereIn('id', $boardingUserIds)->get(['id','name']);
+        $passengers = User::whereIn('id', $boardingUserIds)->get(['id', 'name']);
         $count = User::whereIn('id', $boardingUserIds)->count();
 
         return response()->json([
@@ -182,51 +162,90 @@ class DriverController extends Controller
         ]);
     }
 
-    public function getMonthlyMoney(){
+    public function getBoardedPassengers()
+    {
+        $driver = Auth::user()->driver;
+
+        $activeBus = Bus::where('driver_id', $driver->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$activeBus) {
+            return response()->json(['message' => 'No active bus found'], 404);
+        }
+
+        $scheduledMovement = BusMovement::where('bus_id', $activeBus->id)
+            ->where('status', 'in_progress')
+            ->first();
+
+        if (!$scheduledMovement)
+            return response()->json([
+                'count' => 0,
+                'passengers' => 0
+            ]);
+
+        $boardingUserIds = PassengerBoarding::where('movement_id', $scheduledMovement->id)
+            ->where('status', 'boarded')
+            ->pluck('user_id');
+
+        $passengers = User::whereIn('id', $boardingUserIds)->get(['id', 'name']);
+        $count = User::whereIn('id', $boardingUserIds)->count();
+
+        return response()->json([
+            'count' => $count,
+            'passengers' => $passengers
+        ]);
+    }
+
+    public function getMonthlyMoney()
+    {
         $currentMonth = Carbon::now()->month;
 
         $driver = Auth::user()->driver;
-        
+
         $buses =  Bus::where('driver_id', $driver->id)->get();
-        
+
         $busIds =  $buses->pluck('id');
 
         $trips = BusMovement::whereIn('bus_id', $busIds)
-        ->where('status', 'completed')
-        ->whereMonth('actual_start', $currentMonth)
-        ->with(['passengerBoardings' => function($query) {
-            $query->where('status', 'boarded');
-        }])
-        ->get();
+            ->where('status', 'completed')
+            ->whereMonth('actual_start', $currentMonth)
+            ->with(['passengerBoardings' => function ($query) {
+                $query->where('status', 'boarded');
+            }])
+            ->get();
 
         $totalMoney = $trips->reduce(function ($carry, $trip) {
             $passengerCount = $trip->passengerBoardings->count();
             $tripRevenue = $passengerCount * $trip->price;
             return $carry + $tripRevenue;
         }, 0);
-    
-        return $totalMoney;
+
+        return response()->json([
+            'totalMoney' =>  $totalMoney
+        ]);
     }
 
-    public function getMonthlyTime(){
+    public function getMonthlyTime()
+    {
         $currentMonth = Carbon::now()->month;
 
         $driver = Auth::user()->driver;
-        
+
         $buses =  Bus::where('driver_id', $driver->id)->get();
-        
+
         $busIds =  $buses->pluck('id');
 
         $trips = BusMovement::whereIn('bus_id', $busIds)
             ->where('status', 'completed')
             ->whereMonth('actual_start', $currentMonth);
-        
-        $totalMinutes = $trips->get()->sum(function($trip) {
+
+        $totalMinutes = $trips->get()->sum(function ($trip) {
             return Carbon::parse($trip->actual_start)->diffInMinutes($trip->actual_end);
         });
 
-        $hours = floor($totalMinutes/60);
-        $remaining_minutes = $totalMinutes%60;
+        $hours = floor($totalMinutes / 60);
+        $remaining_minutes = $totalMinutes % 60;
 
         return response()->json([
             'hours' => $hours,

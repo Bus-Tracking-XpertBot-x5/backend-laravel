@@ -79,6 +79,12 @@ class UserAuthController extends Controller
         }
 
         $user = Auth::user();
+
+        if ($user->role == 'admin' || $user->role == 'manager')
+            return response()->json([
+                'message' => 'Only drivers and passengers can acess the mobile app'
+            ], 403);
+
         $user->load('organization');
         $token = $user->createToken('auth_token')->plainTextToken;
         return response()->json([

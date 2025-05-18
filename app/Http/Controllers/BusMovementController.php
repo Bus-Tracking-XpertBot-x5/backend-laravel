@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Jobs\SendNotificationJob;
 use App\Models\BusMovement;
-use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BusMovementController extends Controller
 {
@@ -184,8 +184,13 @@ class BusMovementController extends Controller
 
         // Check if both dates are on the same day
         if (!$start->isSameDay($end)) {
-            return response()->json([
-                'message' => 'The estimated start and end times must be on the same day.',
+            response()->json([
+                'message' => 'The given data was invalid.',
+                'errors'  => [
+                    'estimated_end' => [
+                        'The estimated start and end times must be on the same day.'
+                    ],
+                ],
             ], 422);
         }
 
@@ -252,10 +257,10 @@ class BusMovementController extends Controller
     public function getNextTrip(Request $request)
     {
         $user = Auth::user();
-        
+
         $nextTrip = $user->passengerBoardings()
             ->where('status', 'scheduled')
-            ->with(['movement' => function($query) {
+            ->with(['movement' => function ($query) {
                 $query->with(['bus.driver.user', 'route']);
             }])
             ->orderBy('estimated_boarding_time', 'asc')
@@ -285,7 +290,7 @@ class BusMovementController extends Controller
     public function getCurrentTrip(Request $request)
     {
         $user = Auth::user();
-        
+
         $boarded_trip_boarding = $user->passengerBoardings()
             ->where('status', 'boarded')
             ->with(['movement.bus.driver.user', 'movement.route'])
@@ -318,53 +323,16 @@ class BusMovementController extends Controller
         ], 200);
     }
 
-    public function getTripHistory(Request $request)
-    {
-        $user = Auth::user();
-        
-        $history = $user->passengerBoardings()
-            ->whereIn('status', ['missed', 'departed'])
-            ->with(['movement' => function($query) {
-                $query->with(['bus.driver.user', 'route']);
-            }])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->map(function($boarding) {
-                return [
-                    'boarding' => [
-                        'id' => $boarding->id,
-                        'status' => $boarding->status,
-                        'boarding_time' => $boarding->estimated_boarding_time,
-                        'created_at' => $boarding->created_at
-                    ],
-                    'trip' => [
-                        'id' => $boarding->movement->id,
-                        'route_name' => $boarding->movement->route->route_name,
-                        'bus_name' => $boarding->movement->bus->name,
-                        'driver_name' => $boarding->movement->bus->driver->user->name,
-                        'start_time' => $boarding->movement->estimated_start,
-                        'end_time' => $boarding->movement->estimated_end,
-                        'status' => $boarding->movement->status
-                    ]
-                ];
-            });
-
-        return response()->json([
-            'message' => 'Trip history retrieved successfully',
-            'data' => $history
-        ], 200);
-    }
-
     public function getTripStatistics(Request $request)
     {
         $user = Auth::user();
         $startOfMonth = Carbon::now()->startOfMonth();
-        
+
         $statistics = $user->passengerBoardings()
             ->where('created_at', '>=', $startOfMonth)
             ->get()
             ->groupBy('status')
-            ->map(function($boardings) {
+            ->map(function ($boardings) {
                 return $boardings->count();
             });
 
@@ -372,11 +340,10 @@ class BusMovementController extends Controller
             'message' => 'Trip statistics retrieved successfully',
             'data' => [
                 'total_trips' => $statistics->sum(),
-                'completed' => $statistics->get('departed', 0),
+                'completed' => $statistics->get('boarded', 0),
                 'missed' => $statistics->get('missed', 0),
                 'scheduled' => $statistics->get('scheduled', 0)
             ]
         ], 200);
     }
-
 }

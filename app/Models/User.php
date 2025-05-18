@@ -16,7 +16,7 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         // Adjust the logic as needed to determine access
-        return $this->role === 'admin' || $this->role==='manager';
+        return $this->role === 'admin' || $this->role === 'manager';
     }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -85,5 +85,20 @@ class User extends Authenticatable implements FilamentUser
     public function passengerBoardings()
     {
         return $this->hasMany(PassengerBoarding::class);
+    }
+
+    public function isAdminOrManager()
+    {
+        return $this->role === "admin" || $this->role === "manager";
+    }
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isManager()
+    {
+        return $this->role === 'manager';
     }
 }
